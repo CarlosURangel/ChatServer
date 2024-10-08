@@ -23,15 +23,15 @@ public class ChatClient extends JFrame {
     public ChatClient(String serverAddress, int serverPort) {
 
         try {
-    for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-        if ("Nimbus".equals(info.getName())) {
-            UIManager.setLookAndFeel(info.getClassName());
-            break;
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-    }
-} catch (Exception e) {
-    e.printStackTrace();
-}
 
         // Configuración de la interfaz gráfica
         setTitle("Chat");

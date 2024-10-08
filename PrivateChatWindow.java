@@ -23,7 +23,7 @@ public class PrivateChatWindow extends JFrame {
 
         setTitle("Chat Privado con " + recipient);
         setSize(400, 300);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(HIDE_ON_CLOSE);
 
         chatArea = new JTextArea();
         chatArea.setEditable(false);
