@@ -39,7 +39,9 @@ class HiloChatServer implements Runnable {
                     ChatServer.broadcastMessage(username + ": " + message, this);
                 }
             }
-        } catch (IOException e) {
+        } catch(SocketException e){
+            System.out.println(username +" se ha desconectado");
+        }catch (IOException e) {
             e.printStackTrace();
         } finally {
             ChatServer.removeUser(username);
