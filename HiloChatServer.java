@@ -8,6 +8,7 @@ class HiloChatServer implements Runnable {
     private String username;
     private PrintWriter writer;
     private BufferedReader reader;
+    //DataInputStream y DataOutputStream para manejar la transferencia de archivos y mensajes de texto
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
 
@@ -23,9 +24,9 @@ class HiloChatServer implements Runnable {
             dataInputStream = new DataInputStream(socket.getInputStream());
             dataOutputStream = new DataOutputStream(socket.getOutputStream());
 
-            // Solicitar nombre de usuario
+            //Solicitar nombre de usuario
             this.username = reader.readLine();
-            ChatServer.registerUser(username, this);  // Registra al usuario en el servidor
+            ChatServer.registerUser(username, this);  //Registra al usuario en el servidor
             System.out.println(username + " se ha conectado.");
 
             String message;
@@ -49,31 +50,33 @@ class HiloChatServer implements Runnable {
         }
     }
 
-    // Método para manejar mensajes privados
+    //Método para manejar mensajes privados
     private void handlePrivateMessage(String message) {
+        //Formato para los mensajes privados
+        //PRIVATE:destinatario:mensaje
         String[] parts = message.split(":", 3);
         String recipient = parts[1];
         String privateMessage = parts[2];
         ChatServer.sendPrivateMessage(username, recipient, privateMessage);
     }
 
-    // Método para manejar la transferencia de archivos
+    //Método para manejar la transferencia de archivos
     private void handleFileTransfer(String message) {
         try {
             String[] parts = message.split(":", 3);
             String recipient = parts[1];
             String fileName = parts[2];
 
-            // Leer el tamaño del archivo
+            //Leer el tamaño del archivo
             long fileSize = dataInputStream.readLong();
 
-            // Verificar que el archivo no exceda los 50MB
+            //Verificar que el archivo no exceda los 50MB
             if (fileSize > 50 * 1024 * 1024) {
                 writer.println("ERROR: El archivo excede el tamaño máximo permitido de 50MB.");
                 return;
             }
 
-            // Enviar notificación al destinatario de que está recibiendo un archivo y obtener el handler
+            //Enviar notificación al destinatario de que está recibiendo un archivo y obtener el handler
             HiloChatServer recipientHandler = ChatServer.getUserHandler(recipient);
             if (recipientHandler != null) {
                 //Mandar notificación al usuario de que va a recibir un archivo
@@ -106,7 +109,7 @@ class HiloChatServer implements Runnable {
         }
     }
 
-    // Método para enviar mensajes al cliente
+    //Método para enviar mensajes al cliente
     public void sendMessage(String message) {
         writer.println(message);
     }

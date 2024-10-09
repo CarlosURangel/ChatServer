@@ -21,6 +21,7 @@ public class ChatClient extends JFrame {
 
     public ChatClient(String serverAddress, int serverPort) {
 
+        //Look and feel para dar estilos
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -59,7 +60,7 @@ public class ChatClient extends JFrame {
 
 
         JPanel panel = new JPanel();
-        panel.setLayout(new FlowLayout(FlowLayout.LEFT));  // Layout mejorado
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT));  // Crear layout
 
         panel.add(messageField);
         panel.add(sendButton);
@@ -129,7 +130,7 @@ public class ChatClient extends JFrame {
             }
             writer.println(username);  // Enviar el nombre al servidor
 
-            // *Modificación aquí: Usar el nombre de usuario en el título de la ventana*
+            // Usar el nombre de usuario en el título de la ventana
             setTitle("Chat - " + username);
 
             // Hilo para escuchar mensajes del servidor
@@ -195,7 +196,7 @@ public class ChatClient extends JFrame {
             JOptionPane.showMessageDialog(this, "Seleccione un usuario para enviar el archivo.");
             return;
         }
-
+        //Componente de JFrame que permite seleccionar un archivo
         JFileChooser fileChooser = new JFileChooser();
         int option = fileChooser.showOpenDialog(this);
         if (option == JFileChooser.APPROVE_OPTION) {
@@ -257,7 +258,7 @@ public class ChatClient extends JFrame {
                 if (saveOption == JFileChooser.APPROVE_OPTION) {
                     File fileToSave = fileChooser.getSelectedFile();
 
-                    // Recibir archivo en bloques de 4096 bytes
+                    //Recibir archivo en bloques de 4096 bytes
                     FileOutputStream fileOutputStream = new FileOutputStream(fileToSave);
                     byte[] buffer = new byte[4096];
                     long bytesRead = 0;
@@ -293,7 +294,7 @@ public class ChatClient extends JFrame {
             privateChat.setVisible(true);
         }
     }
-
+    
     public static void main(String[] args) {
         ChatClient client = new ChatClient("localhost", 8090);
         client.setVisible(true);
