@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.swing.*;
+import javax.crypto.SecretKey;
 
 public class PrivateChatWindow extends JFrame {
 
@@ -15,13 +16,20 @@ public class PrivateChatWindow extends JFrame {
     private PrintWriter writer;
     private String recipient;
     private DataOutputStream dataOutputStream;
+    private SecretKey secretKey; // Añadir clave secreta
 
     public PrivateChatWindow(String recipient, PrintWriter writer, DataOutputStream dataOutputStream) {
         this.recipient = recipient;
         this.writer = writer;
         this.dataOutputStream = dataOutputStream;
 
-        setTitle("Chat Privado con " + recipient);
+        try {
+            this.secretKey = EncryptionUtil.generateKey(); // Generar clave secreta
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        setTitle("Chat Privado de " + recipient);
         setSize(400, 300);
         setDefaultCloseOperation(HIDE_ON_CLOSE);
 
@@ -83,8 +91,13 @@ public class PrivateChatWindow extends JFrame {
     private void sendMessage() {
         String message = inputField.getText();
         if (!message.isEmpty()) {
-            writer.println("PRIVATE:" + recipient + ":" + message);  // Enviar mensaje privado al servidor
-            appendMessage("Tú: " + message);  // Mostrar el mensaje enviado en la ventana del cliente
+            try {
+                String encryptedMessage = EncryptionUtil.encrypt(message, secretKey); // Encriptar el mensaje
+                writer.println("PRIVATE:" + recipient + ":" + encryptedMessage);  // Enviar mensaje privado al servidor
+                appendMessage("Tú: " + message);  // Mostrar el mensaje enviado en la ventana del cliente
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             inputField.setText("");
         }
     }
@@ -125,4 +138,14 @@ public class PrivateChatWindow extends JFrame {
             }
         }
     }
+    // Método para recibir un mensaje desencriptado
+    public void receiveMessage(String encryptedMessage) {
+        try {
+            String decryptedMessage = EncryptionUtil.decrypt(encryptedMessage, secretKey); // Desencriptar mensaje
+            appendMessage("Usuario: " + decryptedMessage); // Mostrar mensaje desencriptado
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
+
