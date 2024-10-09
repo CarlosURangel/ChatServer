@@ -7,16 +7,17 @@ import java.util.concurrent.*;
 public class ChatServer {
 
     private static final int PORT = 8090;
-    private static Map<String, HiloChatServer> users = new ConcurrentHashMap<>(); // Usuarios conectados (nombre -> manejador).
+    private static Map<String, HiloChatServer> users = new ConcurrentHashMap<>(); // Usuarios conectados (clave:nombre -> valor:manejador).
 
     public static void main(String[] args) {
         System.out.println("Servidor iniciado, esperando conexiones...");
 
-        
+        //Envía la lista de usuarios cada 30 segundos
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run(){
+                //Ejecuta el método para enviar la lista de usuarios
                 sendUserList();
             }
         }, 0, 30000);
@@ -55,7 +56,7 @@ public class ChatServer {
     // Elimina a un usuario de la lista al desconectarse
     public static synchronized void removeUser(String username) {
         users.remove(username);
-        sendUserList(); // Actualiza la lista inmediatamente
+        sendUserList(); // Actualiza la lista
     }
 
     // Enviar mensaje privado entre dos usuarios
@@ -66,7 +67,7 @@ public class ChatServer {
         }
     }
 
-    // **Método broadcastMessage**: Envía un mensaje a todos los clientes conectados
+    //Envía un mensaje a todos los clientes conectados excepto al cliente que lo envía
     public static synchronized void broadcastMessage(String message, HiloChatServer excludeClient) {
         for (HiloChatServer client : users.values()) {
             if (client != excludeClient) { // Excluye al cliente que envía el mensaje
@@ -76,7 +77,7 @@ public class ChatServer {
     }
 
 
-    // Agregar método para obtener el ClientHandler de un usuario
+    //Agregar método para obtener el ClientHandler de un usuario
     public static synchronized HiloChatServer getUserHandler(String username) {
         return users.get(username);
     }
