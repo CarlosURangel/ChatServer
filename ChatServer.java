@@ -12,6 +12,7 @@ public class ChatServer {
     public static void main(String[] args) {
         System.out.println("Servidor iniciado, esperando conexiones...");
 
+        
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask(){
             @Override
@@ -74,10 +75,6 @@ public class ChatServer {
         }
     }
 
-    // Sobrecarga del método broadcastMessage sin exclusiones (envía a todos)
-    public static synchronized void broadcastMessage(String message) {
-        broadcastMessage(message, null);
-    }
 
     // Agregar método para obtener el ClientHandler de un usuario
     public static synchronized HiloChatServer getUserHandler(String username) {

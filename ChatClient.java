@@ -1,4 +1,3 @@
-
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -8,8 +7,7 @@ import java.util.Map;
 import javax.swing.*;
 
 public class ChatClient extends JFrame { 
-
-
+    private Socket socket;  // Declara el socket aquí
     private JTextArea textArea;
     private JTextField messageField;
     private DefaultListModel<String> userListModel;
@@ -18,7 +16,8 @@ public class ChatClient extends JFrame {
     private BufferedReader reader;
     private DataOutputStream dataOutputStream;
     private DataInputStream dataInputStream;
-    private Map<String, PrivateChatWindow> privateChats = new HashMap<>();
+    public static Map<String, PrivateChatWindow> privateChats = new HashMap<>();
+    private String username;  // Agregamos una variable para el nombre de usuario
 
     public ChatClient(String serverAddress, int serverPort) {
 
@@ -34,7 +33,6 @@ public class ChatClient extends JFrame {
         }
 
         // Configuración de la interfaz gráfica
-        setTitle("Chat");
         setSize(600, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
@@ -74,7 +72,6 @@ public class ChatClient extends JFrame {
         userList.setFont(new Font("Arial", Font.PLAIN, 14));
         userList.setForeground(Color.BLACK);
 
-
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(userList), scrollPane);
         splitPane.setDividerLocation(150);
         add(splitPane, BorderLayout.CENTER);
@@ -94,6 +91,13 @@ public class ChatClient extends JFrame {
             }
         });
 
+        messageField.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                sendMessage();
+            }
+        });
+
         userList.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
                 if (evt.getClickCount() == 2) {
@@ -104,14 +108,14 @@ public class ChatClient extends JFrame {
 
         // Conectar al servidor
         try {
-            Socket socket = new Socket(serverAddress, serverPort);
+            // Inicializa el socket aquí
+            socket = new Socket(serverAddress, serverPort);
             writer = new PrintWriter(socket.getOutputStream(), true);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             dataOutputStream = new DataOutputStream(socket.getOutputStream());
             dataInputStream = new DataInputStream(socket.getInputStream());
 
             // Solicitar nombre de usuario
-            String username = null;
             while (username == null || username.trim().isEmpty()) {
                 username = JOptionPane.showInputDialog(this, "Ingrese su nombre de usuario:");
 
@@ -124,6 +128,9 @@ public class ChatClient extends JFrame {
                 }
             }
             writer.println(username);  // Enviar el nombre al servidor
+
+            // *Modificación aquí: Usar el nombre de usuario en el título de la ventana*
+            setTitle("Chat - " + username);
 
             // Hilo para escuchar mensajes del servidor
             new Thread(new Runnable() {
@@ -172,7 +179,7 @@ public class ChatClient extends JFrame {
 
         // Abre una nueva ventana si aún no está abierta
         if (!privateChats.containsKey(sender)) {
-            PrivateChatWindow privateChat = new PrivateChatWindow(sender, writer, dataOutputStream);
+            PrivateChatWindow privateChat = new PrivateChatWindow(sender, writer, dataOutputStream, dataInputStream);
             privateChats.put(sender, privateChat);
             privateChat.setVisible(true);
         }
@@ -195,9 +202,9 @@ public class ChatClient extends JFrame {
             File file = fileChooser.getSelectedFile();
             long fileSize = file.length();
 
-            // Verificar el tamaño del archivo (máximo 50MB)
+            // Verificar que el archivo sea menor a 50MB
             if (fileSize > 50 * 1024 * 1024) {
-                JOptionPane.showMessageDialog(this, "El archivo es demasiado grande. Máximo 50MB.");
+                JOptionPane.showMessageDialog(this, "Seleccione un archivo menor a 50MB.");
                 return;
             }
 
@@ -212,13 +219,21 @@ public class ChatClient extends JFrame {
                 FileInputStream fileInputStream = new FileInputStream(file);
                 byte[] buffer = new byte[4096];
                 int bytesRead;
+                long totalBytesRead = 0;
                 while ((bytesRead = fileInputStream.read(buffer)) > 0) {
                     dataOutputStream.write(buffer, 0, bytesRead);
+                    totalBytesRead += bytesRead;
                 }
                 dataOutputStream.flush();
                 fileInputStream.close();
 
                 textArea.append("Archivo enviado a " + recipient + ": " + file.getName() + "\n");
+
+                    // Leer la confirmación de que el archivo fue recibido correctamente
+                String confirmation = dataInputStream.readUTF();
+                if (confirmation.startsWith("FILE_TRANSFER_COMPLETE")) {
+                    textArea.append("Transferencia de archivo completada correctamente: " + file.getName() + "\n");
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -273,7 +288,7 @@ public class ChatClient extends JFrame {
     private void startPrivateChat() {
         String recipient = userList.getSelectedValue();
         if (recipient != null && !privateChats.containsKey(recipient)) {
-            PrivateChatWindow privateChat = new PrivateChatWindow(recipient, writer, dataOutputStream);
+            PrivateChatWindow privateChat = new PrivateChatWindow(recipient, writer, dataOutputStream, dataInputStream);
             privateChats.put(recipient, privateChat);
             privateChat.setVisible(true);
         }

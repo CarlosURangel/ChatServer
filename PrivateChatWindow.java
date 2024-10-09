@@ -1,13 +1,12 @@
-
 import java.awt.*;
 import java.awt.event.*;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.swing.*;
-import javax.crypto.SecretKey;
 
 public class PrivateChatWindow extends JFrame {
 
@@ -16,22 +15,18 @@ public class PrivateChatWindow extends JFrame {
     private PrintWriter writer;
     private String recipient;
     private DataOutputStream dataOutputStream;
-    private SecretKey secretKey; // Añadir clave secreta
+    private DataInputStream dataInputStream;
 
-    public PrivateChatWindow(String recipient, PrintWriter writer, DataOutputStream dataOutputStream) {
+    // Constructor modificado para aceptar DataInputStream
+    public PrivateChatWindow(String recipient, PrintWriter writer, DataOutputStream dataOutputStream, DataInputStream dataInputStream) {
         this.recipient = recipient;
         this.writer = writer;
         this.dataOutputStream = dataOutputStream;
+        this.dataInputStream = dataInputStream;
 
-        try {
-            this.secretKey = EncryptionUtil.generateKey(); // Generar clave secreta
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        setTitle("Chat Privado de " + recipient);
+        setTitle("Chat Privado con " + recipient);
         setSize(400, 300);
-        setDefaultCloseOperation(HIDE_ON_CLOSE);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);  // Cambiar a DISPOSE_ON_CLOSE
 
         chatArea = new JTextArea();
         chatArea.setEditable(false);
@@ -49,9 +44,9 @@ public class PrivateChatWindow extends JFrame {
         sendButton.setFont(new Font("Arial", Font.BOLD, 12));
 
         JButton sendFileButton = new JButton("Enviar archivo"); // Botón para enviar archivo
-        sendButton.setBackground(new Color(59, 89, 182));  // Fondo azul
-        sendButton.setForeground(Color.WHITE);  // Texto blanco
-        sendButton.setFont(new Font("Arial", Font.BOLD, 12));
+        sendFileButton.setBackground(new Color(76, 175, 80));  // Fondo verde
+        sendFileButton.setForeground(Color.WHITE);  // Texto blanco
+        sendFileButton.setFont(new Font("Arial", Font.BOLD, 12));
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
@@ -82,6 +77,14 @@ public class PrivateChatWindow extends JFrame {
                 sendMessage();
             }
         });
+
+        // Escuchar el cierre de la ventana
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closePrivateChat();
+            }
+        });
     }
 
     public void appendMessage(String message) {
@@ -91,13 +94,8 @@ public class PrivateChatWindow extends JFrame {
     private void sendMessage() {
         String message = inputField.getText();
         if (!message.isEmpty()) {
-            try {
-                String encryptedMessage = EncryptionUtil.encrypt(message, secretKey); // Encriptar el mensaje
-                writer.println("PRIVATE:" + recipient + ":" + encryptedMessage);  // Enviar mensaje privado al servidor
-                appendMessage("Tú: " + message);  // Mostrar el mensaje enviado en la ventana del cliente
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            writer.println("PRIVATE:" + recipient + ":" + message);  // Enviar mensaje privado al servidor
+            appendMessage("Tú: " + message);  // Mostrar el mensaje enviado en la ventana del cliente
             inputField.setText("");
         }
     }
@@ -111,7 +109,7 @@ public class PrivateChatWindow extends JFrame {
 
             // Verificar el tamaño del archivo (máximo 50MB)
             if (fileSize > 50 * 1024 * 1024) {
-                JOptionPane.showMessageDialog(this, "El archivo es demasiado grande. Máximo 50MB.");
+                JOptionPane.showMessageDialog(this, "Seleccione un archivo menor a 50MB.");
                 return;
             }
 
@@ -126,26 +124,29 @@ public class PrivateChatWindow extends JFrame {
                 FileInputStream fileInputStream = new FileInputStream(file);
                 byte[] buffer = new byte[4096];
                 int bytesRead;
+                long totalBytesRead = 0;
                 while ((bytesRead = fileInputStream.read(buffer)) > 0) {
                     dataOutputStream.write(buffer, 0, bytesRead);
+                    totalBytesRead += bytesRead;
                 }
                 dataOutputStream.flush();
                 fileInputStream.close();
 
                 appendMessage("Archivo enviado a " + recipient + ": " + file.getName());
+
+                // Leer confirmación de recepción desde el servidor usando DataInputStream
+                String confirmation = dataInputStream.readUTF();
+                if (confirmation.startsWith("FILE_TRANSFER_COMPLETE")) {
+                    appendMessage("Transferencia de archivo completada correctamente: " + file.getName());
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-    // Método para recibir un mensaje desencriptado
-    public void receiveMessage(String encryptedMessage) {
-        try {
-            String decryptedMessage = EncryptionUtil.decrypt(encryptedMessage, secretKey); // Desencriptar mensaje
-            appendMessage("Usuario: " + decryptedMessage); // Mostrar mensaje desencriptado
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+    // Método para manejar el cierre de la ventana de chat privado
+    private void closePrivateChat() {
+        ChatClient.privateChats.remove(recipient);  // Eliminar chat privado del mapa de chats
     }
 }
-

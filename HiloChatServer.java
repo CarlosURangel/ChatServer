@@ -73,9 +73,10 @@ class HiloChatServer implements Runnable {
                 return;
             }
 
-            // Enviar notificación al destinatario de que está recibiendo un archivo
+            // Enviar notificación al destinatario de que está recibiendo un archivo y obtener el handler
             HiloChatServer recipientHandler = ChatServer.getUserHandler(recipient);
             if (recipientHandler != null) {
+                //Mandar notificación al usuario de que va a recibir un archivo
                 recipientHandler.sendMessage("FILE_RECEIVE:" + username + ":" + fileName + ":" + fileSize);
 
                 // Transferir el archivo
@@ -89,8 +90,13 @@ class HiloChatServer implements Runnable {
                     recipientHandler.dataOutputStream.write(buffer, 0, read);
                     bytesRead += read;
                 }
-
+                //Asegura de que todos los datos se envíen correctamente
                 recipientHandler.dataOutputStream.flush();
+
+                //Confirmar la transferencia al destinatario
+                recipientHandler.sendMessage("FILE_TRANSFER_COMPLETE:" + fileName);
+
+                //Confirmar al remitente que el archivo fue enviado correctamente
                 writer.println("Archivo enviado correctamente a " + recipient);
             } else {
                 writer.println("ERROR: El usuario " + recipient + " no está conectado.");
